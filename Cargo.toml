@@ -1,0 +1,48 @@
+[workspace]
+resolver = "3"
+members = ["kambo-core", "kambo-ga"]
+
+[package]
+name = "kambo-solver"
+version = "0.1.0"
+edition = "2024"
+authors = ["Heric da Silva Cruz <hericsilvaho@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/hscHeric/kambo-solver"
+keywords = ["optimization", "metaheuristics", "genetic-algorithm"]
+categories = ["algorithms", "science"]
+
+[features]
+default = ["ga"]
+full = ["ga"]
+ga = ["dep:kambo-ga"]
+
+[dependencies]
+kambo-core = { path = "kambo-core", version = "*" }
+kambo-ga = { path = "kambo-ga", version = "*" }
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+unsafe_op_in_unsafe_fn = "warn"
+unused_qualifications = "warn"
+
+[workspace.lints.clippy]
+perf = "warn"
+box_vec = "warn"
+inefficient_to_string = "warn"
+manual_memcpy = "warn"
+vec_init_then_push = "warn"
+len_zero = "warn"
+unwrap_used = "warn"
+expect_used = "warn"
+match_same_arms = "warn"
+redundant_else = "warn"
+redundant_closure_for_method_calls = "warn"
+print_stdout = "warn"
+print_stderr = "warn"
+doc_markdown = "warn"
+undocumented_unsafe_blocks = "warn"
+semicolon_if_nothing_returned = "warn"
+type_complexity = "allow"
+too_many_arguments = "allow"
+needless_lifetimes = "allow"
