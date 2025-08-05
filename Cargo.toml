@@ -18,8 +18,8 @@ full = ["ga"]
 ga = ["dep:kambo-ga"]
 
 [dependencies]
-kambo-core = { path = "kambo-core", version = "*" }
-kambo-ga = { path = "kambo-ga", version = "*" }
+kambo-core = { path = "kambo-core", version = "0.1.0" }
+kambo-ga = { path = "kambo-ga", version = "0.1.0", optional = true }
 
 [workspace.lints.rust]
 unsafe_code = "deny"
@@ -27,7 +27,7 @@ unsafe_op_in_unsafe_fn = "warn"
 unused_qualifications = "warn"
 
 [workspace.lints.clippy]
-perf = "warn"
+perf = { level = "warn", priority = -1 }
 box_vec = "warn"
 inefficient_to_string = "warn"
 manual_memcpy = "warn"
