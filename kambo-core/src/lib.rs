@@ -1,14 +1,9 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+mod algorithm;
+mod problem;
+mod solution;
+mod termination;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use algorithm::{Algorithm, IterationState};
+pub use problem::Problem;
+pub use solution::Solution;
+pub use termination::TerminationCriteria;
