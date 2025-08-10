@@ -8,6 +8,7 @@ pub enum OptimizationGoal {
 
 impl OptimizationGoal {
     #[inline]
+    #[must_use]
     pub fn is_better(&self, new_fitness: f64, current_fitness: f64) -> bool {
         match self {
             //valores menores são melhores.

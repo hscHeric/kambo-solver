@@ -32,15 +32,16 @@ where
         }
     }
 
-    /// Executa o processo de otimização e retorna a melhor solução encontrada.
+    /// Executa o processo de otimização e retorna a melhor solução encontrada
+    #[must_use]
     pub fn run(&self) -> P::Solution {
         let mut state = self.metaheuristic.initialize(self.problem);
 
         while !self.termination.should_terminate(&state) {
-            if let Some(step_best) = self.metaheuristic.step(self.problem, &mut state) {
-                if P::GOAL.is_better(step_best.fitness(), state.best_solution.fitness()) {
-                    state.best_solution = step_best;
-                }
+            if let Some(step_best) = self.metaheuristic.step(self.problem, &mut state)
+                && P::GOAL.is_better(step_best.fitness(), state.best_solution.fitness())
+            {
+                state.best_solution = step_best;
             }
             state.iteration_count += 1;
         }
