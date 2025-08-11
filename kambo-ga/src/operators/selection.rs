@@ -19,6 +19,7 @@ impl TournamentSelection {
     ///
     /// # Panics
     /// Panics if `tournament_size` is 0.
+    #[must_use]
     pub fn new(tournament_size: usize) -> Self {
         assert!(
             tournament_size > 0,
@@ -58,7 +59,6 @@ impl<S: Solution> SelectionOperator<S> for TournamentSelection {
         population: &'a [S],
         goal: OptimizationGoal,
     ) -> (&'a S, &'a S) {
-        // Run two tournaments to select two parents.
         let parent1 = self.run_tournament(rng, population, goal);
         let parent2 = self.run_tournament(rng, population, goal);
         (parent1, parent2)
