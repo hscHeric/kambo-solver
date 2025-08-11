@@ -1,5 +1,4 @@
 use kambo_core::problem::Problem;
-use kambo_core::solution::Solution;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -12,7 +11,7 @@ pub(crate) fn evaluate_population<P: Problem>(problem: &P, population: &mut [P::
 }
 
 #[cfg(feature = "parallel")]
-pub(crate) fn evaluate_population<P: Problem>(problem: &P, population: &mut [P::Solution])
+pub(crate) fn evaluate_population<P>(problem: &P, population: &mut [P::Solution])
 where
     P: Problem + Sync,
     P::Solution: Send,

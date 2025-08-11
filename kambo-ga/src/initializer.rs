@@ -9,8 +9,6 @@ pub struct HybridInitializer<'a, P: Problem> {
 }
 
 impl<P: Problem> HybridInitializer<'_, P> {
-    /// Parte do pré-suposto que a primeira heuristica é a heuristica que gera as soluções
-    /// aleatorias
     pub fn initialize_population(&self, problem: &P, pop_size: usize) -> Vec<P::Solution> {
         let mut population = Vec::with_capacity(pop_size);
         let mut remaining = pop_size;
