@@ -6,7 +6,6 @@ use crate::initializer::HybridInitializer;
 use crate::operators::{
     crossover::CrossoverOperator,
     mutation::MutationOperator,
-    // Corrigido: Importa NoOpRepair para usá-lo como padrão.
     repair::{NoOpRepair, RepairOperator},
     selection::SelectionOperator,
 };
@@ -114,34 +113,38 @@ where
 
     fn step(&self, problem: &P, state: &mut AlgorithmState<P::Solution>) -> Option<P::Solution> {
         let mut rng = self.rng.clone();
-        let mut new_population = Vec::with_capacity(self.pop_size);
 
-        let old_population = self.population.borrow();
+        // Criamos um novo escopo para o empréstimo imutável
+        let mut new_population = {
+            let old_population = self.population.borrow(); // Empréstimo começa aqui
+            let mut children = Vec::with_capacity(self.pop_size);
 
-        for _ in 0..(self.pop_size / 2) {
-            let (parent1, parent2) = self.selection.select(&mut rng, &old_population, P::GOAL);
+            for _ in 0..(self.pop_size / 2) {
+                let (parent1, parent2) = self.selection.select(&mut rng, &old_population, P::GOAL);
 
-            let (mut child1, mut child2) = if rng.random_bool(self.crossover_rate) {
-                self.crossover.crossover(&mut rng, parent1, parent2)
-            } else {
-                (parent1.clone(), parent2.clone())
-            };
+                let (mut child1, mut child2) = if rng.random_bool(self.crossover_rate) {
+                    self.crossover.crossover(&mut rng, parent1, parent2)
+                } else {
+                    (parent1.clone(), parent2.clone())
+                };
 
-            if rng.random_bool(self.mutation_rate) {
-                self.mutation.mutate(&mut rng, &mut child1);
+                if rng.random_bool(self.mutation_rate) {
+                    self.mutation.mutate(&mut rng, &mut child1);
+                }
+                if rng.random_bool(self.mutation_rate) {
+                    self.mutation.mutate(&mut rng, &mut child2);
+                }
+
+                if let Some(repair_op) = self.repair {
+                    repair_op.repair(&mut child1);
+                    repair_op.repair(&mut child2);
+                }
+
+                children.push(child1);
+                children.push(child2);
             }
-            if rng.random_bool(self.mutation_rate) {
-                self.mutation.mutate(&mut rng, &mut child2);
-            }
-
-            if let Some(repair_op) = self.repair {
-                repair_op.repair(&mut child1);
-                repair_op.repair(&mut child2);
-            }
-
-            new_population.push(child1);
-            new_population.push(child2);
-        }
+            children
+        };
 
         evaluate_population(problem, &mut new_population);
         state.evaluations_count += new_population.len();
@@ -163,3 +166,116 @@ where
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        initializer::{HybridInitializer, InitialSolutionHeuristic},
+        operators::{
+            crossover::{AsVectorSolution, OnePoint},
+            mutation::MutationOperator,
+            selection::TournamentSelection,
+        },
+    };
+    use kambo_core::{
+        problem::OptimizationGoal, solution::Solution, solver::Solver, termination::ByIterations,
+    };
+    use rand::Rng;
+
+    #[derive(Debug, Clone)]
+    struct VecSolution {
+        genes: Vec<f64>,
+        fitness: f64,
+    }
+
+    impl Solution for VecSolution {
+        fn fitness(&self) -> f64 {
+            self.fitness
+        }
+        fn set_fitness(&mut self, fitness: f64) {
+            self.fitness = fitness;
+        }
+    }
+
+    impl AsVectorSolution for VecSolution {
+        type Gene = f64;
+        fn genes(&self) -> &[Self::Gene] {
+            &self.genes
+        }
+        fn genes_mut(&mut self) -> &mut [Self::Gene] {
+            &mut self.genes
+        }
+    }
+
+    struct DummyProblem;
+
+    impl Problem for DummyProblem {
+        type Solution = VecSolution;
+        const GOAL: OptimizationGoal = OptimizationGoal::Minimize;
+
+        fn evaluate(&self, solution: &mut Self::Solution) {
+            let fitness = solution.genes.iter().sum();
+            solution.set_fitness(fitness);
+        }
+    }
+
+    struct RandomInitializer;
+    impl InitialSolutionHeuristic<DummyProblem> for RandomInitializer {
+        fn generate(&self, _problem: &DummyProblem) -> VecSolution {
+            let mut rng = rand::rng();
+            let genes: Vec<f64> = (0..10).map(|_| rng.random_range(0.0..100.0)).collect();
+            VecSolution {
+                genes,
+                fitness: f64::INFINITY,
+            }
+        }
+    }
+
+    struct DummyMutation;
+    impl MutationOperator<VecSolution> for DummyMutation {
+        fn mutate<R: Rng>(&self, rng: &mut R, solution: &mut VecSolution) {
+            if !solution.genes.is_empty() {
+                let index = rng.random_range(0..solution.genes.len());
+                solution.genes[index] += rng.random_range(-1.0..1.0);
+            }
+        }
+    }
+
+    #[test]
+    fn test_ga_solver_runs_successfully() {
+        // 1. Setup dummy components
+        let problem = DummyProblem;
+        let initializer = RandomInitializer;
+        let selection = TournamentSelection::new(2);
+        let crossover = OnePoint;
+        let mutation = DummyMutation;
+        let repair = NoOpRepair;
+        // 2. Configure the initializer
+        let hybrid_initializer = HybridInitializer::new(vec![(Box::new(initializer), 1.0)]);
+
+        // 3. Instantiate the Genetic Algorithm
+        let ga = GeneticAlgorithm::new(
+            100, // pop_size
+            0.8, // crossover_rate
+            0.1, // mutation_rate
+            hybrid_initializer,
+            &selection,
+            &crossover,
+            &mutation,
+            Some(&repair), // Explicitly passing None for the repair operator
+        );
+
+        let termination = ByIterations {
+            max_iterations: 100,
+        };
+        let solver = Solver::new(&problem, &ga, &termination);
+
+        let best_solution = solver.run();
+
+        assert!(best_solution.fitness.is_finite());
+        println!(
+            "Test completed. Best fitness found: {}",
+            best_solution.fitness()
+        );
+    }
+}
