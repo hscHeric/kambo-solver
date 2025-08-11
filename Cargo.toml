@@ -11,6 +11,7 @@ kambo-ga = { path = "./kambo-ga", optional = true }
 [features]
 default = []
 ga = ["kambo-ga"]
+ga-parallel = ["ga", "kambo-ga/parallel"]
 
 [workspace]
 resolver = "3"
