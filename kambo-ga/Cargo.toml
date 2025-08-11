@@ -6,3 +6,8 @@ edition = "2024"
 [dependencies]
 kambo-core = { path = "../kambo-core" }
 rand = "0.9.2"
+rayon = { version = "1.10.0", optional = true }
+
+[features]
+default = []
+parallel = ["dep:rayon"]
